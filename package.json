@@ -1,0 +1,11 @@
+{
+  "name": "card-games",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "test": "pnpm -r run test",
+    "build": "pnpm --filter @card-games/client run build",
+    "start": "pnpm --filter @card-games/server run start",
+    "tunnel": "bash tunnel.sh"
+  }
+}
