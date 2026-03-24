@@ -6,7 +6,7 @@ RUN npm install -g pnpm@10
 WORKDIR /app
 
 # Copy workspace config and lockfile first (better caching)
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/server/package.json packages/server/
 COPY packages/client/package.json packages/client/
