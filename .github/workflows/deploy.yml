@@ -14,9 +14,12 @@ jobs:
           host: 34.134.235.242
           username: daniel
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: false
+          command_timeout: 10m
           script: |
             cd /home/danielzhang139/card-games
             git pull
-            sudo docker stop $(sudo docker ps -q) || true
+            sudo docker stop $(sudo docker ps -q) 2>/dev/null || true
+            sudo docker rm $(sudo docker ps -aq) 2>/dev/null || true
             sudo docker build -t card-games .
             sudo docker run -d -p 80:3000 -v /data:/app/data --restart unless-stopped card-games
