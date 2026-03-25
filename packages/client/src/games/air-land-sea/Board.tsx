@@ -341,16 +341,20 @@ function TheaterColumn({ theater, view, opponent, canPlayHere, isTransportPendin
         </span>
       </div>
 
-      {/* Opponent's cards (top) */}
+      {/* Opponent's cards (top card first visually) */}
       <div style={{ marginBottom: 8, minHeight: 40 }}>
-        {opStacks.map((card, i) => (
-          <CardChip
-            key={i}
-            card={card}
-            isClickable={!!(canFlipInTheater && view.myPlayerId)}
-            onClick={() => onFlipCard(opponent, i)}
-          />
-        ))}
+        {[...opStacks].reverse().map((card, ri) => {
+          const i = opStacks.length - 1 - ri; // original index
+          return (
+            <CardChip
+              key={i}
+              card={card}
+              isClickable={!!(canFlipInTheater && view.myPlayerId)}
+              isTopCard={i === opStacks.length - 1}
+              onClick={() => onFlipCard(opponent, i)}
+            />
+          );
+        })}
       </div>
 
       {/* Play zone */}
@@ -381,9 +385,10 @@ function TheaterColumn({ theater, view, opponent, canPlayHere, isTransportPendin
         </button>
       )}
 
-      {/* My cards (bottom) */}
+      {/* My cards (top card first visually) */}
       <div style={{ minHeight: 40 }}>
-        {myStacks.map((card, i) => {
+        {[...myStacks].reverse().map((card, ri) => {
+          const i = myStacks.length - 1 - ri; // original index
           const isTransportSelectable = isTransportPending && !transportFrom;
           const isTransportSelected = transportFrom?.theater === theater && transportFrom?.cardIndex === i;
           const clickable =
@@ -398,6 +403,7 @@ function TheaterColumn({ theater, view, opponent, canPlayHere, isTransportPendin
               isMine
               isClickable={clickable}
               isHighlighted={isTransportSelected}
+              isTopCard={i === myStacks.length - 1}
               onClick={() => {
                 if (isDisruptTarget) onFlipCard(view.myPlayerId!, i);
                 else if (isRedeployTarget) onRedeploy(i);
@@ -412,38 +418,74 @@ function TheaterColumn({ theater, view, opponent, canPlayHere, isTransportPendin
   );
 }
 
-function CardChip({ card, isMine, isClickable, isHighlighted, onClick }: {
+function CardChip({ card, isMine, isClickable, isHighlighted, isTopCard, onClick }: {
   card: PlayedCardView;
   isMine?: boolean;
   isClickable?: boolean;
   isHighlighted?: boolean;
+  isTopCard?: boolean;
   onClick?: () => void;
 }) {
-  const label = card.faceUp ? getCardName(card.cardId) : (card.cardId ? getCardName(card.cardId) : "Face-down");
-  const bg = isHighlighted ? "#ffe0b2" : card.faceUp ? (isMine ? "#c8e6c9" : "#ffcdd2") : "#e0e0e0";
+  const [expanded, setExpanded] = useState(false);
 
-  // Show full card description on hover if the card identity is visible
+  // Colors: face-up mine=green, face-up opponent=red,
+  // face-down mine=greenish gray, face-down opponent=reddish gray
+  let bg: string;
+  if (isHighlighted) {
+    bg = "#ffe0b2";
+  } else if (card.faceUp) {
+    bg = isMine ? "#c8e6c9" : "#ffcdd2";
+  } else {
+    bg = isMine ? "#d5e8d4" : "#e8d4d4";
+  }
+
+  // Determine what's visible: face-up cards are visible to all, face-down only to owner
   const visibleCardId = card.faceUp ? card.cardId : (isMine ? card.cardId : null);
   const cardDef = visibleCardId ? ALL_CARDS.find((c) => c.id === visibleCardId) : null;
-  const tooltip = cardDef
-    ? `${cardDef.name} (str ${cardDef.strength})\n${cardDef.theater} · ${cardDef.abilityType}\n${cardDef.abilityText}`
-    : undefined;
+  const showDescription = isTopCard || expanded;
+
+  const handleClick = () => {
+    if (isClickable && onClick) {
+      onClick();
+    } else if (cardDef && !isTopCard) {
+      setExpanded(!expanded);
+    }
+  };
 
   return (
     <div
-      onClick={isClickable ? onClick : undefined}
-      title={tooltip}
+      onClick={handleClick}
       style={{
-        padding: "4px 8px",
+        padding: "6px 8px",
         marginBottom: 4,
         background: bg,
         borderRadius: 4,
         fontSize: 12,
-        cursor: isClickable ? "pointer" : "default",
+        cursor: isClickable || (!isTopCard && cardDef) ? "pointer" : "default",
         border: isHighlighted ? "2px solid #e65100" : isClickable ? "1px solid #1976d2" : "1px solid transparent",
       }}
     >
-      {label} {!card.faceUp && "(face-down)"}
+      {cardDef ? (
+        <>
+          <div>
+            {isTopCard && <span style={{ fontSize: 9, color: "#888", fontWeight: "bold", marginRight: 4, textTransform: "uppercase" }}>top</span>}
+            <strong>{cardDef.name}</strong>
+            <span style={{ color: "#666", marginLeft: 4 }}>str {cardDef.strength}</span>
+            {!card.faceUp && <span style={{ color: "#999", marginLeft: 4 }}>(face-down)</span>}
+            {!isTopCard && !expanded && cardDef.abilityType !== "none" && <span style={{ color: "#aaa", marginLeft: 4 }}>...</span>}
+          </div>
+          {showDescription && cardDef.abilityType !== "none" && (
+            <div style={{ fontSize: 10, color: "#555", marginTop: 2, lineHeight: 1.3 }}>
+              {cardDef.abilityText}
+            </div>
+          )}
+        </>
+      ) : (
+        <div>
+          {isTopCard && <span style={{ fontSize: 9, color: "#888", fontWeight: "bold", marginRight: 4, textTransform: "uppercase" }}>top</span>}
+          Face-down
+        </div>
+      )}
     </div>
   );
 }
