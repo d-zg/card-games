@@ -112,19 +112,14 @@ The player who wins at least **2 of the 3 theaters** wins the round.
 The winner scores **6 points**.
 
 ### Withdrawal Scoring:
-A player may withdraw on their turn instead of playing a card. The opponent wins the round, but scores points based on how many cards the withdrawing player still had in hand:
+A player may withdraw on their turn instead of playing a card. The opponent wins the round, but scores points based on how many cards the withdrawing player still had in hand. The 1st player gives up fewer points when withdrawing (they have less information since they act first each turn).
 
-| Cards remaining in withdrawing player's hand | Points opponent scores |
-|----------------------------------------------|----------------------|
-| 6 (withdrew before playing any cards)        | 2                    |
-| 5                                            | 2                    |
-| 4                                            | 3                    |
-| 3                                            | 3                    |
-| 2                                            | 4                    |
-| 1                                            | 4                    |
-| 0 (all cards played, round plays out fully)  | 6                    |
-
-Simplified: the opponent scores 2 points if 5-6 cards remain, 3 points if 3-4 remain, 4 points if 1-2 remain, and 6 points if the round completes.
+| Points | 1st Player (cards remaining) | 2nd Player (cards remaining) |
+|--------|------------------------------|------------------------------|
+| 2      | 4-6                          | 5-6                          |
+| 3      | 2-3                          | 3-4                          |
+| 4      | 1                            | 2                            |
+| 6      | 0                            | 0-1                          |
 
 ## Winning the Game
 

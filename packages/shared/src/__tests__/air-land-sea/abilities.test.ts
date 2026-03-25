@@ -30,6 +30,92 @@ describe("Air, Land & Sea — abilities", () => {
   // ONGOING ABILITIES (no resolution needed)
   // ==========================================
 
+  // ==========================================
+  // DYNAMIC THEATER ORDER
+  // ==========================================
+
+  describe("dynamic theater order", () => {
+    it("Maneuver adjacency depends on theater order", () => {
+      // Order: Sea - Air - Land (Air is in the middle, adjacent to Sea and Land)
+      // Play Maneuver to Air → can flip in Sea or Land (both adjacent)
+      const round = makeRound({
+        p0Hand: ["air-3"],
+        p1Hand: ["sea-6"],
+        theaterOrder: ["sea", "air", "land"],
+      });
+      round.theaters.sea.stacks["player-1"] = [{ cardId: "sea-4", faceUp: true }];
+      round.theaters.land.stacks["player-1"] = [{ cardId: "land-6", faceUp: true }];
+      const state = makeGameState(round);
+
+      const s = apply(state, { type: "play", cardId: "air-3", theater: "air", faceUp: true }, "player-0");
+
+      // Maneuver in air → adjacent = [sea, land] with this order
+      expect(s.round!.pendingAbility!.type).toBe("maneuver");
+      if (s.round!.pendingAbility!.type === "maneuver") {
+        expect(s.round!.pendingAbility!.adjacentTheaters).toContain("sea");
+        expect(s.round!.pendingAbility!.adjacentTheaters).toContain("land");
+      }
+    });
+
+    it("Support bonus depends on theater order", () => {
+      // Order: Land - Air - Sea (Air is adjacent to Land and Sea)
+      const round = makeRound({
+        p0Hand: ["air-1", "land-6", "sea-6"],
+        p1Hand: ["air-6", "land-5", "sea-5"],
+        theaterOrder: ["land", "air", "sea"],
+      });
+      const state = makeGameState(round);
+
+      // Play Support face-up to air
+      let s = apply(state, { type: "play", cardId: "air-1", theater: "air", faceUp: true }, "player-0");
+      s = apply(s, { type: "play", cardId: "air-6", theater: "air", faceUp: true }, "player-1");
+      s = apply(s, { type: "play", cardId: "land-6", theater: "land", faceUp: true }, "player-0");
+      s = apply(s, { type: "play", cardId: "sea-5", theater: "sea", faceUp: true }, "player-1");
+      s = apply(s, { type: "play", cardId: "sea-6", theater: "sea", faceUp: true }, "player-0");
+
+      const view = alsGame.view(s, "player-0");
+      // Air is adjacent to both Land and Sea in this order
+      expect(view.theaterStrengths.land["player-0"]).toBe(9); // 6 + 3
+      expect(view.theaterStrengths.sea["player-0"]).toBe(9); // 6 + 3
+    });
+
+    it("with Air on the edge, Support only applies to one adjacent theater", () => {
+      // Order: Air - Sea - Land (Air is on the left edge, adjacent to Sea only)
+      const round = makeRound({
+        p0Hand: ["air-1", "land-6", "sea-6"],
+        p1Hand: ["air-6", "land-5", "sea-5"],
+        theaterOrder: ["air", "sea", "land"],
+      });
+      const state = makeGameState(round);
+
+      let s = apply(state, { type: "play", cardId: "air-1", theater: "air", faceUp: true }, "player-0");
+      s = apply(s, { type: "play", cardId: "air-6", theater: "air", faceUp: true }, "player-1");
+      s = apply(s, { type: "play", cardId: "land-6", theater: "land", faceUp: true }, "player-0");
+      s = apply(s, { type: "play", cardId: "sea-5", theater: "sea", faceUp: true }, "player-1");
+      s = apply(s, { type: "play", cardId: "sea-6", theater: "sea", faceUp: true }, "player-0");
+
+      const view = alsGame.view(s, "player-0");
+      // Air is adjacent to Sea only (not Land) in this order
+      expect(view.theaterStrengths.sea["player-0"]).toBe(9); // 6 + 3
+      expect(view.theaterStrengths.land["player-0"]).toBe(6); // no bonus
+    });
+
+    it("theaterOrder is included in the view", () => {
+      const round = makeRound({
+        p0Hand: ["air-6"],
+        p1Hand: ["sea-6"],
+        theaterOrder: ["sea", "land", "air"],
+      });
+      const state = makeGameState(round);
+
+      const view = alsGame.view(state, "player-0");
+      expect(view.theaterOrder).toEqual(["sea", "land", "air"]);
+
+      const spectator = alsGame.spectatorView(state);
+      expect(spectator.theaterOrder).toEqual(["sea", "land", "air"]);
+    });
+  });
+
   describe("ongoing abilities stay active while face-up, even when covered", () => {
     it("multiple ongoing abilities in the same theater are all active", () => {
       // Escalation in sea, then another card on top — Escalation should stay active

@@ -36,6 +36,8 @@ export interface LogEntry {
 }
 
 export interface RoundState {
+  /** Theater display order (left to right). Determines adjacency. */
+  theaterOrder: Theater[];
   theaters: Record<Theater, TheaterState>;
   hands: Record<PlayerId, string[]>; // card IDs
   deck: string[]; // card IDs, index 0 = top
@@ -132,13 +134,17 @@ export interface ALSView {
   aerodromeActive: boolean;
   /** Action log for the current round, filtered for this viewer. */
   log: string[];
+  /** Theater display order (left to right). Determines adjacency. */
+  theaterOrder: Theater[];
+  /** Whether this player is the first player this round (affects withdrawal scoring). */
+  isFirstPlayer: boolean;
 }
 
 export type PendingAbilityView =
   | { type: "maneuver"; playerId: PlayerId; adjacentTheaters: Theater[] }
   | { type: "ambush"; playerId: PlayerId }
   | { type: "transport"; playerId: PlayerId }
-  | { type: "reinforce"; playerId: PlayerId; topCard: string | null }
+  | { type: "reinforce"; playerId: PlayerId; topCard: string | null; adjacentTheaters: Theater[] }
   | { type: "redeploy"; playerId: PlayerId }
   | { type: "disrupt-opponent"; playerId: PlayerId }
   | { type: "disrupt-self"; playerId: PlayerId };

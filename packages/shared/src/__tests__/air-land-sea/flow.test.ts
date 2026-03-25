@@ -241,23 +241,22 @@ describe("Air, Land & Sea — game flow", () => {
     });
   });
 
-  describe("withdrawal", () => {
-    it("opponent scores 2 points when withdrawing with 6 cards", () => {
+  describe("withdrawal (asymmetric scoring)", () => {
+    // 1st player table: 4-6→2, 2-3→3, 1→4, 0→6
+    it("1st player withdrawing with 6 cards gives opponent 2 pts", () => {
       const round = makeRound({
         p0Hand: ["air-1", "air-2", "air-3", "land-1", "land-2", "land-3"],
         p1Hand: ["sea-1", "sea-2", "sea-3", "air-4", "land-4", "sea-4"],
       });
-      const state = makeGameState(round);
+      const state = makeGameState(round); // p0 is first player
       const dummyRng = { next: () => 0, int: () => 0, pick: (a: any) => a[0], shuffle: (a: any) => a };
 
       const s = alsGame.reducer(state, { type: "withdraw" }, "player-0", dummyRng);
-
       expect(s.phase).toBe("round-over");
-      expect(s.scores["player-1"]).toBe(2); // opponent scores 2
-      expect(s.lastRoundWinner).toBe("player-1");
+      expect(s.scores["player-1"]).toBe(2);
     });
 
-    it("opponent scores 3 points when withdrawing with 4 cards", () => {
+    it("1st player withdrawing with 4 cards gives opponent 2 pts", () => {
       const round = makeRound({
         p0Hand: ["air-1", "air-2", "air-3", "land-1"],
         p1Hand: ["sea-1", "sea-2", "sea-3", "air-4"],
@@ -266,10 +265,10 @@ describe("Air, Land & Sea — game flow", () => {
       const dummyRng = { next: () => 0, int: () => 0, pick: (a: any) => a[0], shuffle: (a: any) => a };
 
       const s = alsGame.reducer(state, { type: "withdraw" }, "player-0", dummyRng);
-      expect(s.scores["player-1"]).toBe(3);
+      expect(s.scores["player-1"]).toBe(2);
     });
 
-    it("opponent scores 4 points when withdrawing with 2 cards", () => {
+    it("1st player withdrawing with 2 cards gives opponent 3 pts", () => {
       const round = makeRound({
         p0Hand: ["air-1", "air-2"],
         p1Hand: ["sea-1", "sea-2"],
@@ -278,10 +277,10 @@ describe("Air, Land & Sea — game flow", () => {
       const dummyRng = { next: () => 0, int: () => 0, pick: (a: any) => a[0], shuffle: (a: any) => a };
 
       const s = alsGame.reducer(state, { type: "withdraw" }, "player-0", dummyRng);
-      expect(s.scores["player-1"]).toBe(4);
+      expect(s.scores["player-1"]).toBe(3);
     });
 
-    it("opponent scores 4 points when withdrawing with 1 card", () => {
+    it("1st player withdrawing with 1 card gives opponent 4 pts", () => {
       const round = makeRound({
         p0Hand: ["air-1"],
         p1Hand: ["sea-1"],
@@ -291,6 +290,46 @@ describe("Air, Land & Sea — game flow", () => {
 
       const s = alsGame.reducer(state, { type: "withdraw" }, "player-0", dummyRng);
       expect(s.scores["player-1"]).toBe(4);
+    });
+
+    // 2nd player table: 5-6→2, 3-4→3, 2→4, 0-1→6
+    it("2nd player withdrawing with 5 cards gives opponent 2 pts", () => {
+      const round = makeRound({
+        p0Hand: ["air-1", "air-2", "air-3", "land-1", "land-2"],
+        p1Hand: ["sea-1", "sea-2", "sea-3", "air-4", "land-4"],
+        currentPlayer: "player-1",
+      });
+      const state = makeGameState(round); // p0 is first, p1 is second
+      const dummyRng = { next: () => 0, int: () => 0, pick: (a: any) => a[0], shuffle: (a: any) => a };
+
+      const s = alsGame.reducer(state, { type: "withdraw" }, "player-1", dummyRng);
+      expect(s.scores["player-0"]).toBe(2);
+    });
+
+    it("2nd player withdrawing with 4 cards gives opponent 3 pts", () => {
+      const round = makeRound({
+        p0Hand: ["air-1", "air-2", "air-3", "land-1"],
+        p1Hand: ["sea-1", "sea-2", "sea-3", "air-4"],
+        currentPlayer: "player-1",
+      });
+      const state = makeGameState(round);
+      const dummyRng = { next: () => 0, int: () => 0, pick: (a: any) => a[0], shuffle: (a: any) => a };
+
+      const s = alsGame.reducer(state, { type: "withdraw" }, "player-1", dummyRng);
+      expect(s.scores["player-0"]).toBe(3);
+    });
+
+    it("2nd player withdrawing with 1 card gives opponent 6 pts", () => {
+      const round = makeRound({
+        p0Hand: ["air-1"],
+        p1Hand: ["sea-1"],
+        currentPlayer: "player-1",
+      });
+      const state = makeGameState(round);
+      const dummyRng = { next: () => 0, int: () => 0, pick: (a: any) => a[0], shuffle: (a: any) => a };
+
+      const s = alsGame.reducer(state, { type: "withdraw" }, "player-1", dummyRng);
+      expect(s.scores["player-0"]).toBe(6);
     });
   });
 

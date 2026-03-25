@@ -195,8 +195,10 @@ describe("Air, Land & Sea — full game simulation", () => {
     expect(state.lastRoundWinner).toBe("player-0");
 
     // ============================================================
-    // ROUND 3: P1 goes first. Containment showcase, then withdrawal.
-    // P0 scores 3, reaching 12. Game over.
+    // ROUND 3: P0 goes first (alternation: R1=P0, R2=P1, R3=P0).
+    // Containment showcase, then P1 withdraws.
+    // P1 is 2nd player, withdraws with 4 cards → 3 pts to P0.
+    // P0 total: 9 + 3 = 12. Game over.
     // ============================================================
     state = {
       ...state,
@@ -204,24 +206,21 @@ describe("Air, Land & Sea — full game simulation", () => {
         p1Hand: ["air-5", "sea-5", "air-2", "land-2", "sea-2", "land-5"],
         p0Hand: ["air-6", "land-6", "sea-6", "air-1", "land-1", "sea-1"],
         deck: ["air-3", "air-4", "land-3", "land-4", "sea-3", "sea-4"],
-        currentPlayer: "player-1",
+        currentPlayer: "player-0",
       }),
       phase: "playing" as const,
       roundNumber: 3,
-      firstPlayer: "player-1",
+      firstPlayer: "player-0",
     };
 
-    // -- Turn 1 (P1): Play air-5 (Containment) face-up to air --
+    // -- Turn 1 (P0): Play air-6 face-up to air --
+    state = apply(state, { type: "play", cardId: "air-6", theater: "air", faceUp: true }, "player-0");
+
+    // -- Turn 2 (P1): Play air-5 (Containment) face-up to air --
     // Ongoing: any card played face-down is immediately discarded.
     state = apply(state, { type: "play", cardId: "air-5", theater: "air", faceUp: true }, "player-1");
 
-    // -- Turn 2 (P0): Play air-6 face-up to air --
-    state = apply(state, { type: "play", cardId: "air-6", theater: "air", faceUp: true }, "player-0");
-
-    // -- Turn 3 (P1): Play sea-5 face-up to sea --
-    state = apply(state, { type: "play", cardId: "sea-5", theater: "sea", faceUp: true }, "player-1");
-
-    // -- Turn 4 (P0): Play sea-6 face-DOWN to land --
+    // -- Turn 3 (P0): Play sea-6 face-DOWN to land --
     // Containment is active → card is discarded!
     const deckSizeBefore = state.round!.deck.length;
     state = apply(state, { type: "play", cardId: "sea-6", theater: "land", faceUp: false }, "player-0");
@@ -234,12 +233,18 @@ describe("Air, Land & Sea — full game simulation", () => {
     expect(state.round!.deck).toHaveLength(deckSizeBefore + 1);
     expect(state.round!.deck[state.round!.deck.length - 1]).toBe("sea-6");
 
-    // -- Turn 5 (P1): Withdraws with 4 cards remaining --
-    // P1 played air-5 and sea-5 (2 cards), 4 remaining → P0 scores 3.
+    // -- Turn 4 (P1): Play sea-5 face-up to sea --
+    state = apply(state, { type: "play", cardId: "sea-5", theater: "sea", faceUp: true }, "player-1");
+
+    // -- Turn 5 (P0): Play land-6 face-up to land --
+    state = apply(state, { type: "play", cardId: "land-6", theater: "land", faceUp: true }, "player-0");
+
+    // -- Turn 6 (P1): Withdraws with 4 cards remaining --
+    // P1 is 2nd player, withdraws with 4 cards → 3 pts to P0.
     expect(state.round!.hands["player-1"]).toHaveLength(4);
     state = apply(state, { type: "withdraw" }, "player-1");
 
-    // P0 reaches 12 points → GAME OVER!
+    // P0 reaches 12 points (9 + 3) → GAME OVER!
     expect(state.phase).toBe("game-over");
     expect(state.scores).toEqual({ "player-0": 12, "player-1": 0 });
     expect(state.lastRoundWinner).toBe("player-0");

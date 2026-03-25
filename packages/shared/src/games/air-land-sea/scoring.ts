@@ -7,8 +7,8 @@ const PLAYERS: PlayerId[] = ["player-0", "player-1"];
 
 // ============================================================
 // Ongoing ability checks — single source of truth.
-// An ongoing ability is active when its card is the top
-// (uncovered) card in a stack and face-up.
+// An ongoing ability is active when its card is face-up,
+// regardless of whether it is covered.
 // ============================================================
 
 /** Is a card face-up anywhere in a stack? Ongoing abilities stay active while face-up, even when covered. */
@@ -86,7 +86,7 @@ export function theaterStrength(
 
   // Support (air-1): if active, +3 to each adjacent theater
   if (theater !== "air" && isOngoingActiveForPlayer(round, "air-1", playerId)) {
-    if (adjacentTheaters("air").includes(theater)) {
+    if (adjacentTheaters("air", round.theaterOrder).includes(theater)) {
       total += 3;
     }
   }
@@ -127,10 +127,19 @@ export function resolveRound(
   };
 }
 
-/** Points scored on withdrawal based on cards remaining in hand. */
-export function withdrawalPoints(cardsRemaining: number): number {
-  if (cardsRemaining >= 5) return 2;
-  if (cardsRemaining >= 3) return 3;
-  if (cardsRemaining >= 1) return 4;
-  return 6; // 0 cards = full play-through
+/** Points scored on withdrawal based on cards remaining and whether the withdrawing player is 1st or 2nd. */
+export function withdrawalPoints(cardsRemaining: number, isFirstPlayer: boolean): number {
+  if (isFirstPlayer) {
+    // 1st player: 4-6 → 2, 2-3 → 3, 1 → 4, 0 → 6
+    if (cardsRemaining >= 4) return 2;
+    if (cardsRemaining >= 2) return 3;
+    if (cardsRemaining >= 1) return 4;
+    return 6;
+  } else {
+    // 2nd player: 5-6 → 2, 3-4 → 3, 2 → 4, 0-1 → 6
+    if (cardsRemaining >= 5) return 2;
+    if (cardsRemaining >= 3) return 3;
+    if (cardsRemaining >= 2) return 4;
+    return 6;
+  }
 }

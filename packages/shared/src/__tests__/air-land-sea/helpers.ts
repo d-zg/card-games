@@ -10,8 +10,10 @@ export function makeRound(opts: {
   p1Hand: string[];
   deck?: string[];
   currentPlayer?: PlayerId;
+  theaterOrder?: Theater[];
 }): RoundState {
   return {
+    theaterOrder: opts.theaterOrder ?? ["air", "land", "sea"],
     theaters: {
       air: emptyTheater(),
       land: emptyTheater(),

@@ -159,7 +159,7 @@ describe("end-to-end game lifecycle", () => {
     let gameOver = false;
     let roundsPlayed = 0;
 
-    while (!gameOver && roundsPlayed < 20) {
+    while (!gameOver && roundsPlayed < 30) {
       const state = await getState(gameId, t0);
 
       if (state.phase === "game-over") {

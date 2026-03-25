@@ -10,7 +10,7 @@ import { ALL_CARDS } from "@card-games/shared/src/games/air-land-sea/cards.js";
 import { withdrawalPoints } from "@card-games/shared/src/games/air-land-sea/scoring.js";
 import type { PlayerId } from "@card-games/shared";
 
-const THEATERS: Theater[] = ["air", "land", "sea"];
+const DEFAULT_THEATER_ORDER: Theater[] = ["air", "land", "sea"];
 const THEATER_LABELS: Record<Theater, string> = { air: "Air", land: "Land", sea: "Sea" };
 const THEATER_TINTS: Record<Theater, string> = {
   air: "rgba(255, 255, 255, 0)",
@@ -132,7 +132,7 @@ export function AirLandSeaBoard({ view, version, playerNames, playerWins, onActi
 
       {/* Theaters */}
       <div style={{ display: "flex", gap: "clamp(4px, 1vw, 12px)", marginBottom: 16 }}>
-        {THEATERS.map((theater) => (
+        {(view.theaterOrder ?? DEFAULT_THEATER_ORDER).map((theater) => (
           <TheaterColumn
             key={theater}
             theater={theater}
@@ -211,7 +211,7 @@ export function AirLandSeaBoard({ view, version, playerNames, playerWins, onActi
           onClick={handleWithdraw}
           style={{ padding: "8px 16px", background: "#f44336", color: "white", border: "none", borderRadius: 4 }}
         >
-          Withdraw ({withdrawalPoints(view.myHand.length)} pts to opponent)
+          Withdraw ({withdrawalPoints(view.myHand.length, view.isFirstPlayer)} pts to opponent)
         </button>
       )}
 
@@ -478,8 +478,9 @@ function AbilityPanel({ ability, onReinforce }: {
       <div style={{ padding: 12, background: "#fff3e0", borderRadius: 4, marginBottom: 16 }}>
         <strong>Reinforce:</strong> Top card is {ability.topCard ? getCardName(ability.topCard) : "unknown"}.
         <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-          <button onClick={() => onReinforce(true, "air")}>Play to Air</button>
-          <button onClick={() => onReinforce(true, "sea")}>Play to Sea</button>
+          {ability.adjacentTheaters.map((t) => (
+            <button key={t} onClick={() => onReinforce(true, t)}>Play to {THEATER_LABELS[t]}</button>
+          ))}
           <button onClick={() => onReinforce(false)}>Put back</button>
         </div>
       </div>

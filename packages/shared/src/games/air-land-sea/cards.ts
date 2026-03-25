@@ -34,11 +34,11 @@ export function getCard(cardId: string): CardDef {
   return card;
 }
 
-/** Theaters adjacent to a given theater. Air <-> Land <-> Sea. */
-export function adjacentTheaters(theater: Theater): Theater[] {
-  switch (theater) {
-    case "air": return ["land"];
-    case "land": return ["air", "sea"];
-    case "sea": return ["land"];
-  }
+/** Theaters adjacent to a given theater, based on position in the theater order. */
+export function adjacentTheaters(theater: Theater, order: Theater[]): Theater[] {
+  const idx = order.indexOf(theater);
+  const result: Theater[] = [];
+  if (idx > 0) result.push(order[idx - 1]);
+  if (idx < order.length - 1) result.push(order[idx + 1]);
+  return result;
 }

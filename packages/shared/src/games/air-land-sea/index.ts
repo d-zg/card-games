@@ -33,7 +33,9 @@ function cardLabel(cardId: string): string {
 
 function dealRound(rng: SeededRng, firstPlayer: PlayerId): RoundState {
   const cardIds = rng.shuffle(ALL_CARDS.map((c) => c.id));
+  const theaterOrder = rng.shuffle<Theater>(["air", "land", "sea"]);
   return {
+    theaterOrder,
     theaters: {
       air: { stacks: { "player-0": [], "player-1": [] } },
       land: { stacks: { "player-0": [], "player-1": [] } },
@@ -110,7 +112,8 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
     if (action.type === "withdraw") {
       const round = structuredClone(state.round!);
       const cardsRemaining = round.hands[playerId].length;
-      const points = withdrawalPoints(cardsRemaining);
+      const isFirstPlayer = playerId === state.firstPlayer;
+      const points = withdrawalPoints(cardsRemaining, isFirstPlayer);
       const winner = otherPlayer(playerId);
       const msg = `Withdrew (${points} pts to opponent)`;
       round.log.push({ playerId, text: msg, publicText: msg });
@@ -166,7 +169,7 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
 
       if (action.faceUp || !isOngoingActiveForAny(round, "air-5")) {
         // Blockade (sea-5): discard cards played to adjacent theater with 3+ cards
-        if (isOngoingActiveForAny(round, "sea-5") && adjacentTheaters("sea").includes(action.theater)) {
+        if (isOngoingActiveForAny(round, "sea-5") && adjacentTheaters("sea", round.theaterOrder).includes(action.theater)) {
           const totalCards =
             round.theaters[action.theater].stacks["player-0"].length +
             round.theaters[action.theater].stacks["player-1"].length;
@@ -237,6 +240,8 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
         airDropActive: false,
         aerodromeActive: false,
         log: [],
+        theaterOrder: ["air", "land", "sea"],
+        isFirstPlayer: false,
       };
     }
 
@@ -255,6 +260,8 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
       airDropActive: round.airDropNextTurn === playerId,
       aerodromeActive: isOngoingActiveForPlayer(round, "air-4", playerId),
       log: buildLog(round.log, playerId),
+      theaterOrder: round.theaterOrder,
+      isFirstPlayer: playerId === state.firstPlayer,
     };
   },
 
@@ -276,6 +283,8 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
         airDropActive: false,
         aerodromeActive: false,
         log: [],
+        theaterOrder: ["air", "land", "sea"],
+        isFirstPlayer: false,
       };
     }
 
@@ -294,6 +303,8 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
       airDropActive: false,
       aerodromeActive: false,
       log: buildLog(round.log, null),
+      theaterOrder: round.theaterOrder,
+      isFirstPlayer: false,
     };
   },
 
@@ -427,7 +438,7 @@ function triggerInstantAbility(
     case "air-3": // Maneuver (air) — flip in adjacent theater
     case "land-3": // Maneuver (land)
     case "sea-3": { // Maneuver (sea)
-      const adjacent = adjacentTheaters(theater);
+      const adjacent = adjacentTheaters(theater, round.theaterOrder);
       if (!hasCardsInTheaters(round, adjacent)) return null;
       return { type: "maneuver", playerId, adjacentTheaters: adjacent };
     }
@@ -440,7 +451,7 @@ function triggerInstantAbility(
         type: "reinforce",
         playerId,
         topCard: round.deck[0],
-        adjacentTheaters: adjacentTheaters(theater),
+        adjacentTheaters: adjacentTheaters(theater, round.theaterOrder),
       };
     case "land-5": { // Disrupt — opponent flips, then you flip
       const opponent = otherPlayer(playerId);
@@ -710,6 +721,7 @@ function buildPendingAbilityView(
         type: "reinforce",
         playerId: pending.playerId,
         topCard: pending.playerId === playerId ? pending.topCard : null,
+        adjacentTheaters: pending.adjacentTheaters,
       };
     default:
       return { type: pending.type, playerId: pending.playerId } as PendingAbilityView;
