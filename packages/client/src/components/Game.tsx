@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getRoom, startGame } from "../api.js";
 import { useIdentity } from "../hooks/useIdentity.js";
 import { useGameSocket } from "../hooks/useGameSocket.js";
@@ -9,6 +9,7 @@ import type { PlayerId } from "@card-games/shared";
 
 export function Game() {
   const { roomId } = useParams<{ roomId: string }>();
+  const navigate = useNavigate();
   const { token } = useIdentity(roomId!);
   const [gameId, setGameId] = useState<string | null>(null);
   const [playerNames, setPlayerNames] = useState<Record<PlayerId, string>>({});
@@ -78,6 +79,14 @@ export function Game() {
 
   return (
     <div style={{ fontFamily: "system-ui" }}>
+      <div style={{ padding: "8px 16px" }}>
+        <button
+          onClick={() => navigate("/")}
+          style={{ background: "none", border: "none", color: "#1976d2", cursor: "pointer", fontSize: 14, padding: 0 }}
+        >
+          ← Home
+        </button>
+      </div>
       {!connected && (
         <div style={{ background: "#fff3cd", padding: 8, textAlign: "center", fontSize: 14 }}>
           Reconnecting...
