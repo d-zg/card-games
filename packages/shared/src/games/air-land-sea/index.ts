@@ -97,9 +97,7 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
     rng: SeededRng,
   ): ALSState {
     if (action.type === "start-next-round") {
-      const firstPlayer = state.lastRoundWinner
-        ? otherPlayer(state.lastRoundWinner)
-        : "player-0";
+      const firstPlayer = otherPlayer(state.firstPlayer);
       return {
         ...state,
         round: dealRound(rng, firstPlayer),
@@ -200,7 +198,7 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
         const p1Empty = round.hands["player-1"].length === 0;
 
         if (p0Empty && p1Empty) {
-          const { roundWinner } = resolveRound(round);
+          const { roundWinner } = resolveRound(round, state.firstPlayer);
           return endRound({ ...state, round }, roundWinner, 6);
         }
 
@@ -380,6 +378,11 @@ function isValidTheater(value: unknown): value is Theater {
 
 function isValidPlayer(value: unknown): value is PlayerId {
   return typeof value === "string" && VALID_PLAYERS.has(value);
+}
+
+/** A card is uncovered if it's the top card in its stack. Covered cards cannot be flipped. */
+function isUncovered(stack: { cardId: string; faceUp: boolean }[], cardIndex: number): boolean {
+  return cardIndex === stack.length - 1;
 }
 
 
@@ -586,7 +589,7 @@ function resolveAbility(
   const p1Empty = round.hands["player-1"].length === 0;
 
   if (p0Empty && p1Empty) {
-    const { roundWinner } = resolveRound(round);
+    const { roundWinner } = resolveRound(round, state.firstPlayer);
     return endRound({ ...state, round }, roundWinner, 6);
   }
 
@@ -615,6 +618,7 @@ function validateAbilityAction(
       }
       const stack = round.theaters[action.theater].stacks[action.cardOwner];
       if (!stack[action.cardIndex]) return "No card at that position";
+      if (!isUncovered(stack, action.cardIndex)) return "Cannot flip a covered card";
       return null;
     }
 
@@ -624,6 +628,7 @@ function validateAbilityAction(
       if (!isValidPlayer(action.cardOwner)) return "Invalid card owner";
       const stack = round.theaters[action.theater].stacks[action.cardOwner];
       if (!stack[action.cardIndex]) return "No card at that position";
+      if (!isUncovered(stack, action.cardIndex)) return "Cannot flip a covered card";
       return null;
     }
 
@@ -664,6 +669,7 @@ function validateAbilityAction(
       if (!isValidTheater(action.theater)) return "Invalid theater";
       const stack = round.theaters[action.theater].stacks[playerId];
       if (!stack[action.cardIndex]) return "No card at that position";
+      if (!isUncovered(stack, action.cardIndex)) return "Cannot flip a covered card";
       return null;
     }
 

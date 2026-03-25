@@ -30,6 +30,30 @@ describe("Air, Land & Sea — abilities", () => {
   // ONGOING ABILITIES (no resolution needed)
   // ==========================================
 
+  describe("ongoing abilities stay active while face-up, even when covered", () => {
+    it("multiple ongoing abilities in the same theater are all active", () => {
+      // Escalation in sea, then another card on top — Escalation should stay active
+      const round = makeRound({
+        p0Hand: ["sea-2", "sea-6", "air-6"],
+        p1Hand: ["air-1", "land-6", "sea-5"],
+      });
+      const state = makeGameState(round);
+
+      // p0 plays Escalation face-up to sea
+      let s = apply(state, { type: "play", cardId: "sea-2", theater: "sea", faceUp: true }, "player-0");
+      s = apply(s, { type: "play", cardId: "air-1", theater: "air", faceUp: true }, "player-1");
+      // p0 plays sea-6 on top of Escalation — Escalation is now covered
+      s = apply(s, { type: "play", cardId: "sea-6", theater: "sea", faceUp: true }, "player-0");
+      s = apply(s, { type: "play", cardId: "land-6", theater: "land", faceUp: true }, "player-1");
+      // p0 plays air-6 face-down to land — should be str 4 if Escalation is still active
+      s = apply(s, { type: "play", cardId: "air-6", theater: "land", faceUp: false }, "player-0");
+
+      const view = alsGame.view(s, "player-0");
+      // Escalation is covered but face-up → still active → face-down cards are str 4
+      expect(view.theaterStrengths.land["player-0"]).toBe(4);
+    });
+  });
+
   describe("Support (air-1) — ongoing +3 to adjacent theaters", () => {
     it("adds +3 to land when face-up and uncovered in air", () => {
       const round = makeRound({
@@ -52,23 +76,23 @@ describe("Air, Land & Sea — abilities", () => {
       expect(view.theaterStrengths.sea["player-0"]).toBe(0);
     });
 
-    it("does not add bonus if covered", () => {
+    it("keeps bonus even when covered (ongoing abilities stay active while face-up)", () => {
       const round = makeRound({
         p0Hand: ["air-1", "air-6", "land-6"],
         p1Hand: ["sea-6", "sea-5", "sea-4"],
       });
       const state = makeGameState(round);
 
-      // p0 plays Support to air, then later covers it
+      // p0 plays Support to air, then covers it
       let s = apply(state, { type: "play", cardId: "air-1", theater: "air", faceUp: true }, "player-0");
       s = apply(s, { type: "play", cardId: "sea-6", theater: "sea", faceUp: true }, "player-1");
       s = apply(s, { type: "play", cardId: "air-6", theater: "air", faceUp: false }, "player-0");
-      // Now air-1 is covered by air-6 face-down → Support inactive
+      // air-1 is covered but still face-up → Support stays active
       s = apply(s, { type: "play", cardId: "sea-5", theater: "sea", faceUp: true }, "player-1");
       s = apply(s, { type: "play", cardId: "land-6", theater: "land", faceUp: true }, "player-0");
 
       const view = alsGame.view(s, "player-0");
-      expect(view.theaterStrengths.land["player-0"]).toBe(6); // no bonus
+      expect(view.theaterStrengths.land["player-0"]).toBe(9); // 6 + 3 from Support
     });
   });
 
@@ -144,7 +168,28 @@ describe("Air, Land & Sea — abilities", () => {
     });
   });
 
-    it("does not affect covered cards when Cover Fire itself is covered", () => {
+    it("Cover Fire affects cards below it but not cards above it", () => {
+      const round = makeRound({
+        p0Hand: ["land-1", "land-4", "land-6"],
+        p1Hand: ["sea-6", "sea-5", "sea-4"],
+      });
+      const state = makeGameState(round);
+
+      // Stack will be: land-1 (bottom), land-4 (Cover Fire, middle), land-6 (top)
+      let s = apply(state, { type: "play", cardId: "land-1", theater: "land", faceUp: true }, "player-0");
+      s = apply(s, { type: "play", cardId: "sea-6", theater: "sea", faceUp: true }, "player-1");
+      s = apply(s, { type: "play", cardId: "land-4", theater: "land", faceUp: true }, "player-0");
+      s = apply(s, { type: "play", cardId: "sea-5", theater: "sea", faceUp: true }, "player-1");
+      s = apply(s, { type: "play", cardId: "land-6", theater: "land", faceUp: true }, "player-0");
+
+      const view = alsGame.view(s, "player-0");
+      // land-1: below Cover Fire → str 4
+      // land-4: Cover Fire itself → str 4 (its own printed strength)
+      // land-6: above Cover Fire → str 6 (not affected, Cover Fire only affects cards below)
+      expect(view.theaterStrengths.land["player-0"]).toBe(4 + 4 + 6);
+    });
+
+    it("Cover Fire stays active even when covered (ongoing abilities persist while face-up)", () => {
       const round = makeRound({
         p0Hand: ["land-1", "land-4", "land-6"],
         p1Hand: ["sea-6", "sea-5", "sea-4"],
@@ -157,14 +202,14 @@ describe("Air, Land & Sea — abilities", () => {
       // p0 plays Cover Fire on top of land-1 → land-1 becomes str 4
       s = apply(s, { type: "play", cardId: "land-4", theater: "land", faceUp: true }, "player-0");
       s = apply(s, { type: "play", cardId: "sea-5", theater: "sea", faceUp: true }, "player-1");
-      // p0 plays land-6 on top of Cover Fire → Cover Fire is now covered, ability should deactivate
+      // p0 plays land-6 on top of Cover Fire → Cover Fire is covered but still face-up
       s = apply(s, { type: "play", cardId: "land-6", theater: "land", faceUp: true }, "player-0");
 
-      // Stack: [land-1(str 1), land-4(str 4, covered), land-6(str 6, top)]
-      // Cover Fire is covered → its ongoing ability is inactive
-      // land-1 should revert to its printed strength (1), not stay at 4
+      // Stack: [land-1(str 1, covered by Cover Fire → str 4), land-4(str 4, covered but active), land-6(str 6, top)]
+      // Cover Fire is covered but still face-up → its ongoing ability stays active
+      // land-1 stays at str 4 (affected by Cover Fire)
       const view = alsGame.view(s, "player-0");
-      expect(view.theaterStrengths.land["player-0"]).toBe(1 + 4 + 6); // 11, not 4 + 4 + 6 = 14
+      expect(view.theaterStrengths.land["player-0"]).toBe(4 + 4 + 6); // 14
     });
 
   describe("Escalation (sea-2) — ongoing, face-down cards become str 4", () => {
@@ -533,6 +578,79 @@ describe("Air, Land & Sea — abilities", () => {
       // p0's air-1 should now be face-up
       expect(s.round!.theaters.air.stacks["player-0"][0].faceUp).toBe(true);
       expect(s.round!.pendingAbility).toBeNull();
+    });
+  });
+
+  // ==========================================
+  // COVERED CARDS CANNOT BE FLIPPED
+  // ==========================================
+
+  describe("covered cards cannot be flipped", () => {
+    it("Maneuver rejects flipping a covered card", () => {
+      const round = makeRound({
+        p0Hand: ["land-3"],
+        p1Hand: ["sea-6"],
+      });
+      // P1 has two cards in air — bottom one is covered
+      round.theaters.air.stacks["player-1"] = [
+        { cardId: "air-1", faceUp: true },  // index 0, covered
+        { cardId: "air-6", faceUp: true },  // index 1, top (uncovered)
+      ];
+      const state = makeGameState(round);
+
+      // P0 plays Maneuver to land → can flip in adjacent (air or sea)
+      let s = apply(state, { type: "play", cardId: "land-3", theater: "land", faceUp: true }, "player-0");
+
+      // Flipping the top card (uncovered) should work
+      const topError = validate(s, { type: "choose-flip", theater: "air", cardOwner: "player-1", cardIndex: 1 }, "player-0");
+      expect(topError).toBeNull();
+
+      // Flipping the covered card (index 0) should be rejected
+      const coveredError = validate(s, { type: "choose-flip", theater: "air", cardOwner: "player-1", cardIndex: 0 }, "player-0");
+      expect(coveredError).not.toBeNull();
+    });
+
+    it("Ambush rejects flipping a covered card", () => {
+      const round = makeRound({
+        p0Hand: ["land-2"],
+        p1Hand: ["sea-6"],
+      });
+      round.theaters.sea.stacks["player-1"] = [
+        { cardId: "sea-1", faceUp: true },  // covered
+        { cardId: "sea-6", faceUp: true },  // top
+      ];
+      const state = makeGameState(round);
+
+      let s = apply(state, { type: "play", cardId: "land-2", theater: "land", faceUp: true }, "player-0");
+
+      const coveredError = validate(s, { type: "choose-flip", theater: "sea", cardOwner: "player-1", cardIndex: 0 }, "player-0");
+      expect(coveredError).not.toBeNull();
+    });
+
+    it("Disrupt rejects flipping a covered card", () => {
+      const round = makeRound({
+        p0Hand: ["land-5"],
+        p1Hand: ["sea-6"],
+      });
+      round.theaters.sea.stacks["player-1"] = [
+        { cardId: "sea-1", faceUp: true },  // covered
+        { cardId: "sea-4", faceUp: true },  // top
+      ];
+      round.theaters.air.stacks["player-0"] = [
+        { cardId: "air-1", faceUp: false },
+      ];
+      const state = makeGameState(round);
+
+      // P0 plays Disrupt → P1 must flip one of their own
+      let s = apply(state, { type: "play", cardId: "land-5", theater: "land", faceUp: true }, "player-0");
+
+      // P1 trying to flip their covered card should be rejected
+      const coveredError = validate(s, { type: "choose-disrupt-flip", theater: "sea", cardIndex: 0 }, "player-1");
+      expect(coveredError).not.toBeNull();
+
+      // P1 flipping their top card should work
+      const topError = validate(s, { type: "choose-disrupt-flip", theater: "sea", cardIndex: 1 }, "player-1");
+      expect(topError).toBeNull();
     });
   });
 

@@ -159,7 +159,7 @@ describe("end-to-end game lifecycle", () => {
     let gameOver = false;
     let roundsPlayed = 0;
 
-    while (!gameOver && roundsPlayed < 10) {
+    while (!gameOver && roundsPlayed < 20) {
       const state = await getState(gameId, t0);
 
       if (state.phase === "game-over") {
@@ -180,21 +180,20 @@ describe("end-to-end game lifecycle", () => {
         continue;
       }
 
-      // Play 2 cards each (face-down to avoid ability issues), then P0 withdraws
-      // This gives the opponent 3 points per round (4 cards remaining)
-      const currentState = await getState(gameId, tokens[state.currentPlayer as keyof typeof tokens]);
-      const currentPlayer = currentState.currentPlayer;
+      // Play 4 turns alternating (face-down to avoid ability issues),
+      // then the current player withdraws with 4 cards remaining
+      const first = state.currentPlayer as keyof typeof tokens;
+      const second = first === "player-0" ? "player-1" : "player-0";
+      await playFaceDown(gameId, tokens[first]);
+      await playFaceDown(gameId, tokens[second]);
+      await playFaceDown(gameId, tokens[first]);
+      await playFaceDown(gameId, tokens[second]);
 
-      // Play 4 turns (2 per player)
-      await playFaceDown(gameId, tokens["player-0"]);
-      await playFaceDown(gameId, tokens["player-1"]);
-      await playFaceDown(gameId, tokens["player-0"]);
-      await playFaceDown(gameId, tokens["player-1"]);
-
-      // P0 withdraws with 4 cards remaining → opponent scores 3
+      // Current player withdraws (4 cards remaining → opponent scores 3)
+      const whoWithdraws = (await getState(gameId, t0)).currentPlayer;
       const withdrawRes = await request(app)
         .post(`/api/games/${gameId}/action`)
-        .set("Authorization", `Bearer ${t0}`)
+        .set("Authorization", `Bearer ${tokens[whoWithdraws as keyof typeof tokens]}`)
         .send({ type: "withdraw" });
       expect(withdrawRes.status).toBe(200);
       expect(["round-over", "game-over"]).toContain(withdrawRes.body.view.phase);
@@ -202,12 +201,11 @@ describe("end-to-end game lifecycle", () => {
       roundsPlayed++;
     }
 
-    // 3. Verify game over
+    // 3. Verify game over — someone reached 12 points
     const finalState = await getState(gameId, t0);
     expect(finalState.phase).toBe("game-over");
-
-    // P1 should have won (P0 kept withdrawing)
-    expect(finalState.scores["player-1"]).toBeGreaterThanOrEqual(12);
+    const maxScore = Math.max(finalState.scores["player-0"], finalState.scores["player-1"]);
+    expect(maxScore).toBeGreaterThanOrEqual(12);
 
     // 4. Verify no more actions accepted
     const postGameAction = await request(app)

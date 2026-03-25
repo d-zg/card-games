@@ -84,7 +84,7 @@ You play exactly one card per turn (unless an ability grants an extra turn or ex
 
 ### Stacking / Covering
 - Cards in a theater are stacked on top of each other (each player has their own stack per theater).
-- A card beneath another card is "COVERED." Covered cards still contribute their strength, but only the top (uncovered) card's ongoing ability is active.
+- A card beneath another card is "COVERED." Covered cards still contribute their strength, and their ongoing abilities remain active as long as the card is face-up. A covered card can never be flipped by an ability.
 - When you play a new card to a theater, it goes on top of your stack there, covering any previous cards you played to that theater.
 
 ## Key Terms
@@ -100,7 +100,7 @@ After all cards have been played (or a player withdraws), compare total strength
 - Face-up cards contribute their printed strength (modified by any active abilities).
 - Face-down cards contribute strength 2 (unless modified by an ability like Escalation).
 - The player with the higher total strength in a theater wins that theater.
-- If tied, the theater is won by the player who did NOT play the last card of the round (i.e., the player who played second-to-last, meaning the non-final player).
+- If tied, the theater is won by the first player (the player who went first this round).
 
 ## Winning a Round
 
@@ -134,7 +134,7 @@ The first player to reach **12 or more points** wins the game. If both players r
 
 1. Record the score.
 2. Collect all 18 battle cards, shuffle, and deal 6 to each player.
-3. The player who lost the previous round goes first in the next round.
+3. The first player alternates each round (the player who went second becomes first player).
 
 ## Ability Clarifications
 

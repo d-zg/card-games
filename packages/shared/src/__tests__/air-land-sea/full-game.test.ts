@@ -81,7 +81,7 @@ describe("Air, Land & Sea — full game simulation", () => {
     expect(state.round).toBeNull();
 
     // ============================================================
-    // ROUND 2: P1 goes first (loser goes first).
+    // ROUND 2: P1 goes first (first player alternates).
     // Full play-through with abilities. P0 wins, scores 6.
     // Abilities used: Escalation, Support, Ambush, Maneuver (x2),
     //   Cover Fire.

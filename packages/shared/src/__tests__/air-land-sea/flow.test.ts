@@ -195,7 +195,7 @@ describe("Air, Land & Sea — game flow", () => {
 
       // Round should be over (both hands empty). player-0 wins air (6 > 5).
       // Only air has cards; land and sea are empty.
-      // Empty theaters: tied at 0. Tie goes to non-last-player (player-0 since player-1 played last).
+      // Empty theaters: tied at 0. Tie goes to first player (player-0 since player-1 played last).
       // So player-0 wins all 3 theaters → wins round.
       expect(s.phase).toBe("round-over");
       expect(s.lastRoundWinner).toBe("player-0");
@@ -216,18 +216,18 @@ describe("Air, Land & Sea — game flow", () => {
       s = alsGame.reducer(s, { type: "play", cardId: "land-6", theater: "land", faceUp: true }, "player-1", dummyRng);
 
       // land: p0=2 (face-down), p1=6 → p1 wins land
-      // air, sea: tied at 0 → tie goes to non-last-player (player-0)
+      // air, sea: tied at 0 → tie goes to first player (player-0)
       // p0 wins 2, p1 wins 1 → p0 wins round
       expect(s.phase).toBe("round-over");
       expect(s.lastRoundWinner).toBe("player-0");
     });
 
-    it("tied theater goes to non-last player", () => {
+    it("tied theater goes to first player", () => {
       const round = makeRound({
         p0Hand: ["air-6"],
         p1Hand: ["sea-6"],
       });
-      const state = makeGameState(round);
+      const state = makeGameState(round); // firstPlayer defaults to player-0
       const dummyRng = { next: () => 0, int: () => 0, pick: (a: any) => a[0], shuffle: (a: any) => a };
 
       // p0 plays to air, p1 plays to sea → land is tied at 0
@@ -236,7 +236,7 @@ describe("Air, Land & Sea — game flow", () => {
 
       // air: p0=6, p1=0 → p0 wins
       // sea: p0=0, p1=6 → p1 wins
-      // land: 0-0 → tie → goes to non-last-player (p0 since p1 played last)
+      // land: 0-0 → tie → goes to first player (p0)
       expect(s.lastRoundWinner).toBe("player-0");
     });
   });
@@ -328,19 +328,15 @@ describe("Air, Land & Sea — game flow", () => {
       expect(s.round!.hands["player-1"]).toHaveLength(6);
     });
 
-    it("loser goes first in the next round", () => {
+    it("first player alternates each round", () => {
       const round = makeRound({ p0Hand: ["air-6"], p1Hand: ["land-6"] });
-      const state = makeGameState(round);
+      const state = makeGameState(round); // firstPlayer = player-0
       const dummyRng = { next: () => 0, int: () => 0, pick: (a: any) => a[0], shuffle: (a: any) => a };
 
-      // p0 plays air-6 to air (str 6), p1 plays land-6 to land (str 6)
-      // air: p0=6 > p1=0 → p0; land: p0=0 < p1=6 → p1; sea: 0-0 tie → non-last-player = p0
-      // p0 wins 2 theaters → p0 wins round
       let s = alsGame.reducer(state, { type: "play", cardId: "air-6", theater: "air", faceUp: true }, "player-0", dummyRng);
       s = alsGame.reducer(s, { type: "play", cardId: "land-6", theater: "land", faceUp: true }, "player-1", dummyRng);
-      expect(s.lastRoundWinner).toBe("player-0");
 
-      // Next round: loser (p1) goes first
+      // Next round: first player alternates from p0 → p1
       s = alsGame.reducer(s, { type: "start-next-round" }, "player-0", dummyRng);
       expect(s.round!.currentPlayer).toBe("player-1");
       expect(s.firstPlayer).toBe("player-1");
@@ -357,7 +353,7 @@ describe("Air, Land & Sea — game flow", () => {
 
       // p0 wins the round → gains 6 points → total 16 → game over
       // But we need p0 to actually win. With just these 2 cards:
-      // air: p0=6 > p1=0; land: p0=0 < p1=6; sea: tie → p0 (non-last-player)
+      // air: p0=6 > p1=0; land: p0=0 < p1=6; sea: tie → p0 (first player)
       let s = alsGame.reducer(state, { type: "play", cardId: "air-6", theater: "air", faceUp: true }, "player-0", dummyRng);
       s = alsGame.reducer(s, { type: "play", cardId: "land-6", theater: "land", faceUp: true }, "player-1", dummyRng);
 

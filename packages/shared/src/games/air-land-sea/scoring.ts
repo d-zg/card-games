@@ -11,14 +11,12 @@ const PLAYERS: PlayerId[] = ["player-0", "player-1"];
 // (uncovered) card in a stack and face-up.
 // ============================================================
 
-/** Is a card the top (uncovered) and face-up card in its stack? */
-function isTopAndFaceUp(
+/** Is a card face-up anywhere in a stack? Ongoing abilities stay active while face-up, even when covered. */
+function isFaceUpInStack(
   stack: { cardId: string; faceUp: boolean }[],
   cardId: string,
 ): boolean {
-  if (stack.length === 0) return false;
-  const top = stack[stack.length - 1];
-  return top.cardId === cardId && top.faceUp;
+  return stack.some((card) => card.cardId === cardId && card.faceUp);
 }
 
 /** Is an ongoing ability active for a specific player (in any theater)? */
@@ -28,7 +26,7 @@ export function isOngoingActiveForPlayer(
   playerId: PlayerId,
 ): boolean {
   for (const theater of THEATERS) {
-    if (isTopAndFaceUp(round.theaters[theater].stacks[playerId], cardId)) {
+    if (isFaceUpInStack(round.theaters[theater].stacks[playerId], cardId)) {
       return true;
     }
   }
@@ -61,9 +59,15 @@ export function theaterStrength(
 
   const hasEscalation = isOngoingActiveForPlayer(round, "sea-2", playerId);
 
-  // Cover Fire: if it's the top card in this theater, cards below it become str 4.
-  const coverFireActive = isTopAndFaceUp(stack, "land-4");
-  const coverFireIndex = coverFireActive ? stack.length - 1 : -1;
+  // Cover Fire: if face-up in this theater, cards below it become str 4.
+  // It stays active even when covered (ongoing abilities persist while face-up).
+  let coverFireIndex = -1;
+  for (let i = 0; i < stack.length; i++) {
+    if (stack[i].cardId === "land-4" && stack[i].faceUp) {
+      coverFireIndex = i;
+      break;
+    }
+  }
 
   for (let i = 0; i < stack.length; i++) {
     const played = stack[i];
@@ -97,6 +101,7 @@ export function theaterStrength(
 /** Determine who wins each theater and the round. Returns the round winner. */
 export function resolveRound(
   round: RoundState,
+  firstPlayer: PlayerId,
 ): { theaterWinners: Record<Theater, PlayerId>; roundWinner: PlayerId } {
   const theaterWinners: Record<string, PlayerId> = {};
 
@@ -107,9 +112,8 @@ export function resolveRound(
     } else if (strengths[1] > strengths[0]) {
       theaterWinners[theater] = "player-1";
     } else {
-      // Tie: won by the player who did NOT play last
-      const lastPlayer = round.lastPlayerToPlay ?? "player-1";
-      theaterWinners[theater] = lastPlayer === "player-0" ? "player-1" : "player-0";
+      // Tie: won by the first player (the player who went first this round)
+      theaterWinners[theater] = firstPlayer;
     }
   }
 
