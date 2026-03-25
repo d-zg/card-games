@@ -668,6 +668,59 @@ describe("Air, Land & Sea — abilities", () => {
   });
 
   // ==========================================
+  // FLIPPING FACE-DOWN CARDS TRIGGERS ABILITIES
+  // ==========================================
+
+  describe("flipping a face-down card face-up triggers its ability", () => {
+    it("flipping a face-down instant card triggers its instant ability", () => {
+      // P1 played air-3 (Maneuver) face-down to land earlier.
+      // P0 uses Ambush to flip it face-up → Maneuver's instant ability should trigger.
+      const round = makeRound({
+        p0Hand: ["land-2"],
+        p1Hand: ["sea-6"],
+      });
+      // P1 has air-3 (Maneuver) face-down in land
+      round.theaters.land.stacks["player-1"] = [{ cardId: "air-3", faceUp: false }];
+      // Put a card in air so the triggered Maneuver has something to flip
+      round.theaters.air.stacks["player-0"] = [{ cardId: "air-6", faceUp: true }];
+      const state = makeGameState(round);
+
+      // P0 plays Ambush → flip P1's face-down air-3 face-up
+      let s = apply(state, { type: "play", cardId: "land-2", theater: "land", faceUp: true }, "player-0");
+      s = apply(s, { type: "choose-flip", theater: "land", cardOwner: "player-1", cardIndex: 0 }, "player-0");
+
+      // air-3 is now face-up → its Maneuver instant ability should trigger
+      expect(s.round!.theaters.land.stacks["player-1"][0].faceUp).toBe(true);
+      // A new pending ability should exist for the Maneuver that was just revealed
+      expect(s.round!.pendingAbility).not.toBeNull();
+      expect(s.round!.pendingAbility!.type).toBe("maneuver");
+      // The Maneuver belongs to P1 (their card), so P1 resolves it
+      expect(s.round!.pendingAbility!.playerId).toBe("player-1");
+    });
+
+    it("flipping a face-down ongoing card activates its ongoing ability", () => {
+      // P0 played sea-2 (Escalation) face-down. Opponent flips it face-up.
+      // Escalation should now be active (P0's face-down cards become str 4).
+      const round = makeRound({
+        p0Hand: ["land-6"],
+        p1Hand: ["land-2"],
+      });
+      round.theaters.sea.stacks["player-0"] = [{ cardId: "sea-2", faceUp: false }];
+      // P0 also has a face-down card in air to test Escalation's effect
+      round.theaters.air.stacks["player-0"] = [{ cardId: "air-6", faceUp: false }];
+      const state = makeGameState(round, { firstPlayer: "player-1" });
+
+      // P1 plays Ambush → flip P0's sea-2 face-up
+      let s = apply(state, { type: "play", cardId: "land-2", theater: "land", faceUp: true }, "player-1");
+      s = apply(s, { type: "choose-flip", theater: "sea", cardOwner: "player-0", cardIndex: 0 }, "player-1");
+
+      // sea-2 (Escalation) is now face-up → P0's face-down cards should be str 4
+      const view = alsGame.view(s, "player-0");
+      expect(view.theaterStrengths.air["player-0"]).toBe(4); // face-down air-6 = str 4 (Escalation)
+    });
+  });
+
+  // ==========================================
   // COVERED CARDS CANNOT BE FLIPPED
   // ==========================================
 
