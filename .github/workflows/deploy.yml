@@ -15,7 +15,7 @@ jobs:
           username: daniel
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd card-games
+            cd /home/danielzhang139/card-games
             git pull
             sudo docker stop $(sudo docker ps -q) || true
             sudo docker build -t card-games .
