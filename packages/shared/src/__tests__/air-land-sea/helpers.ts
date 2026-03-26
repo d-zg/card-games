@@ -57,5 +57,6 @@ export function makeGameState(
     firstPlayer: opts?.firstPlayer ?? "player-0",
     roundNumber: opts?.roundNumber ?? 1,
     lastRoundWinner: null,
+    lastRoundLog: [],
   };
 }

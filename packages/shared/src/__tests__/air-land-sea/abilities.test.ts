@@ -162,6 +162,50 @@ describe("Air, Land & Sea — abilities", () => {
       expect(view.theaterStrengths.sea["player-0"]).toBe(0);
     });
 
+    it("applies bonus based on where Support is placed, not its home theater", () => {
+      // BUG REPRO: Support (air-1) played face-down to land, then flipped face-up.
+      // Bonus should apply to theaters adjacent to land, not adjacent to air.
+      // Theater order: air - land - sea (land is in the middle, adjacent to air and sea)
+      const round = makeRound({
+        p0Hand: ["sea-6"],
+        p1Hand: ["sea-5"],
+        theaterOrder: ["air", "land", "sea"],
+      });
+      // Place Support face-up in land (simulating face-down play + flip)
+      round.theaters.land.stacks["player-0"] = [{ cardId: "air-1", faceUp: true }];
+      // Place a card in air and sea so we can check bonus application
+      round.theaters.air.stacks["player-0"] = [{ cardId: "air-6", faceUp: true }];
+      round.theaters.sea.stacks["player-0"] = [{ cardId: "land-6", faceUp: true }];
+      const state = makeGameState(round);
+
+      const view = alsGame.view(state, "player-0");
+      // Support is in land → adjacent theaters are air and sea → both get +3
+      expect(view.theaterStrengths.air["player-0"]).toBe(9);  // 6 + 3
+      expect(view.theaterStrengths.sea["player-0"]).toBe(9);  // 6 + 3
+      // Land itself (where Support sits) should NOT get the bonus
+      expect(view.theaterStrengths.land["player-0"]).toBe(1);  // just Support's own strength
+    });
+
+    it("applies bonus based on placement when Support is on the edge", () => {
+      // Support played to sea (rightmost theater). Adjacent = land only.
+      // Theater order: air - land - sea
+      const round = makeRound({
+        p0Hand: ["land-5"],
+        p1Hand: ["sea-5"],
+        theaterOrder: ["air", "land", "sea"],
+      });
+      round.theaters.sea.stacks["player-0"] = [{ cardId: "air-1", faceUp: true }];
+      round.theaters.air.stacks["player-0"] = [{ cardId: "air-6", faceUp: true }];
+      round.theaters.land.stacks["player-0"] = [{ cardId: "land-6", faceUp: true }];
+      const state = makeGameState(round);
+
+      const view = alsGame.view(state, "player-0");
+      // Support is in sea → adjacent theater is land only (sea is on edge)
+      expect(view.theaterStrengths.land["player-0"]).toBe(9);  // 6 + 3
+      expect(view.theaterStrengths.air["player-0"]).toBe(6);   // no bonus (not adjacent to sea)
+      expect(view.theaterStrengths.sea["player-0"]).toBe(1);   // just Support's own strength
+    });
+
     it("keeps bonus even when covered (ongoing abilities stay active while face-up)", () => {
       const round = makeRound({
         p0Hand: ["air-1", "air-6", "land-6"],
@@ -357,6 +401,38 @@ describe("Air, Land & Sea — abilities", () => {
       // land-2 should be discarded, not in the theater
       const landP1 = s.round!.theaters.land.stacks["player-1"];
       expect(landP1.some(c => c.cardId === "land-2")).toBe(false);
+    });
+
+    it("discards based on where Blockade is placed, not its home theater", () => {
+      // BUG REPRO: Blockade (sea-5) played face-down to air, then flipped face-up.
+      // Theater order: land - sea - air.
+      //   Adjacent to "sea" (hardcoded/buggy) = ["land", "air"]
+      //   Adjacent to "air" (where Blockade actually is) = ["sea"]
+      // Playing to land (3+ cards) should NOT be blocked (land is not adjacent to air),
+      // but the bug hardcodes "sea" adjacency which includes land.
+      const round = makeRound({
+        p0Hand: ["land-6"],
+        p1Hand: ["sea-6"],
+        theaterOrder: ["land", "sea", "air"],
+      });
+      // Blockade face-up in air (simulating face-down play + flip)
+      round.theaters.air.stacks["player-0"] = [{ cardId: "sea-5", faceUp: true }];
+      // Pre-populate land with 3 cards so Blockade could trigger there
+      round.theaters.land.stacks["player-0"] = [
+        { cardId: "air-2", faceUp: false },
+        { cardId: "air-3", faceUp: false },
+      ];
+      round.theaters.land.stacks["player-1"] = [
+        { cardId: "land-2", faceUp: false },
+      ];
+      const state = makeGameState(round);
+
+      // p0 plays to land (3+ cards there). Land is NOT adjacent to air (where Blockade sits),
+      // so this card should NOT be discarded.
+      const s = apply(state, { type: "play", cardId: "land-6", theater: "land", faceUp: true }, "player-0");
+
+      const landP0 = s.round!.theaters.land.stacks["player-0"];
+      expect(landP0.some(c => c.cardId === "land-6")).toBe(true);
     });
 
     it("does not affect theaters not adjacent to sea", () => {

@@ -430,6 +430,7 @@ describe("Air, Land & Sea — game flow", () => {
         firstPlayer: "player-0",
         roundNumber: 5,
         lastRoundWinner: "player-0",
+        lastRoundLog: [],
       };
 
       // Should be able to start another round (not stuck in game-over)

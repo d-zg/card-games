@@ -19,6 +19,20 @@ function isFaceUpInStack(
   return stack.some((card) => card.cardId === cardId && card.faceUp);
 }
 
+/** Find which theater a face-up card is in for a specific player. Returns null if not face-up anywhere. */
+function findCardTheater(
+  round: RoundState,
+  cardId: string,
+  playerId: PlayerId,
+): Theater | null {
+  for (const theater of THEATERS) {
+    if (isFaceUpInStack(round.theaters[theater].stacks[playerId], cardId)) {
+      return theater;
+    }
+  }
+  return null;
+}
+
 /** Is an ongoing ability active for a specific player (in any theater)? */
 export function isOngoingActiveForPlayer(
   round: RoundState,
@@ -84,9 +98,10 @@ export function theaterStrength(
     }
   }
 
-  // Support (air-1): if active, +3 to each adjacent theater
-  if (theater !== "air" && isOngoingActiveForPlayer(round, "air-1", playerId)) {
-    if (adjacentTheaters("air", round.theaterOrder).includes(theater)) {
+  // Support (air-1): if active, +3 to each adjacent theater (based on where it's placed)
+  const supportTheater = findCardTheater(round, "air-1", playerId);
+  if (supportTheater && theater !== supportTheater) {
+    if (adjacentTheaters(supportTheater, round.theaterOrder).includes(theater)) {
       total += 3;
     }
   }

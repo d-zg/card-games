@@ -13,6 +13,9 @@ importers:
       '@card-games/shared':
         specifier: workspace:*
         version: link:../shared
+      '@jax-js/jax':
+        specifier: ^0.1.10
+        version: 0.1.10
       react:
         specifier: ^19.1.0
         version: 19.2.4
@@ -484,6 +487,10 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@jax-js/jax@0.1.10':
+    resolution: {integrity: sha512-7SZLB2ixEGlPIggjDLZ9JLXV+QIpdfLvQMD1FC7R9QHBIm6iYwG/0OT2CeCYdi8LJRNrJWnDo2fxVsTXULSWlA==}
+    engines: {pnpm: '>=10.0.0'}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -1791,6 +1798,8 @@ snapshots:
 
   '@esbuild/win32-x64@0.27.4':
     optional: true
+
+  '@jax-js/jax@0.1.10': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

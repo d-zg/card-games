@@ -1,0 +1,89 @@
+{
+  "params": [
+    {
+      "key": "b0",
+      "shape": [
+        256
+      ],
+      "dtype": "float32",
+      "byteOffset": 0,
+      "byteLength": 1024
+    },
+    {
+      "key": "b1",
+      "shape": [
+        128
+      ],
+      "dtype": "float32",
+      "byteOffset": 1024,
+      "byteLength": 512
+    },
+    {
+      "key": "pb",
+      "shape": [
+        186
+      ],
+      "dtype": "float32",
+      "byteOffset": 1536,
+      "byteLength": 744
+    },
+    {
+      "key": "pw",
+      "shape": [
+        128,
+        186
+      ],
+      "dtype": "float32",
+      "byteOffset": 2280,
+      "byteLength": 95232
+    },
+    {
+      "key": "vb",
+      "shape": [
+        1
+      ],
+      "dtype": "float32",
+      "byteOffset": 97512,
+      "byteLength": 4
+    },
+    {
+      "key": "vw",
+      "shape": [
+        128,
+        1
+      ],
+      "dtype": "float32",
+      "byteOffset": 97516,
+      "byteLength": 512
+    },
+    {
+      "key": "w0",
+      "shape": [
+        269,
+        256
+      ],
+      "dtype": "float32",
+      "byteOffset": 98028,
+      "byteLength": 275456
+    },
+    {
+      "key": "w1",
+      "shape": [
+        256,
+        128
+      ],
+      "dtype": "float32",
+      "byteOffset": 373484,
+      "byteLength": 131072
+    }
+  ],
+  "totalBytes": 504556,
+  "networkConfig": {
+    "hiddenLayers": [
+      256,
+      128
+    ]
+  },
+  "timestamp": "2026-03-26T00:10:23.284Z",
+  "batch": 200
+}

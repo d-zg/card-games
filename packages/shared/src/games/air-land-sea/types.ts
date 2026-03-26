@@ -74,6 +74,8 @@ export interface ALSState {
   roundNumber: number;
   /** Who won the last round (loser goes first next round). */
   lastRoundWinner: PlayerId | null;
+  /** Log from the last completed round (preserved so clients can show final events like withdrawal). */
+  lastRoundLog: LogEntry[];
 }
 
 // -- Actions --

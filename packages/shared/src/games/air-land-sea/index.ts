@@ -22,6 +22,18 @@ import {
 const THEATERS: Theater[] = ["air", "land", "sea"];
 const PLAYERS: PlayerId[] = ["player-0", "player-1"];
 
+/** Find which theater a face-up card is in (for any player). Returns null if not face-up anywhere. */
+function findActiveCardTheater(round: RoundState, cardId: string): Theater | null {
+  for (const theater of THEATERS) {
+    for (const p of PLAYERS) {
+      if (round.theaters[theater].stacks[p].some((c) => c.cardId === cardId && c.faceUp)) {
+        return theater;
+      }
+    }
+  }
+  return null;
+}
+
 function otherPlayer(p: PlayerId): PlayerId {
   return p === "player-0" ? "player-1" : "player-0";
 }
@@ -69,6 +81,7 @@ function endRound(
     round: null,
     phase: gameOver ? "game-over" : "round-over",
     lastRoundWinner: winner,
+    lastRoundLog: state.round?.log ?? [],
   };
 }
 
@@ -89,6 +102,7 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
       firstPlayer,
       roundNumber: 1,
       lastRoundWinner: null,
+      lastRoundLog: [],
     };
   },
 
@@ -169,7 +183,8 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
 
       if (action.faceUp || !isOngoingActiveForAny(round, "air-5")) {
         // Blockade (sea-5): discard cards played to adjacent theater with 3+ cards
-        if (isOngoingActiveForAny(round, "sea-5") && adjacentTheaters("sea", round.theaterOrder).includes(action.theater)) {
+        const blockadeTheater = findActiveCardTheater(round, "sea-5");
+        if (blockadeTheater && adjacentTheaters(blockadeTheater, round.theaterOrder).includes(action.theater)) {
           const totalCards =
             round.theaters[action.theater].stacks["player-0"].length +
             round.theaters[action.theater].stacks["player-1"].length;
@@ -239,7 +254,7 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
         lastRoundWinner: state.lastRoundWinner,
         airDropActive: false,
         aerodromeActive: false,
-        log: [],
+        log: buildLog(state.lastRoundLog, playerId),
         theaterOrder: ["air", "land", "sea"],
         isFirstPlayer: false,
       };
@@ -282,7 +297,7 @@ export const alsGame: GameDefinition<ALSState, ALSAction, ALSView> = {
         lastRoundWinner: state.lastRoundWinner,
         airDropActive: false,
         aerodromeActive: false,
-        log: [],
+        log: buildLog(state.lastRoundLog, null),
         theaterOrder: ["air", "land", "sea"],
         isFirstPlayer: false,
       };

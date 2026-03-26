@@ -1,0 +1,16 @@
+{
+  "imports": {
+    "@jax-js/jax": "npm:@jax-js/jax",
+    "@jax-js/optax": "npm:@jax-js/optax",
+    "@card-games/shared": "../shared/src/index.ts",
+    "@card-games/shared/": "../shared/src/"
+  },
+  "unstable": ["webgpu"],
+  "compilerOptions": {
+    "strict": true
+  },
+  "tasks": {
+    "check": "deno run --allow-all --sloppy-imports src/check.ts",
+    "train": "deno run --allow-all --sloppy-imports src/run-training.ts"
+  }
+}

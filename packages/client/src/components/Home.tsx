@@ -31,6 +31,10 @@ export function Home() {
     <div style={{ maxWidth: 400, margin: "80px auto", fontFamily: "system-ui" }}>
       <h1>Air, Land &amp; Sea</h1>
 
+      <button onClick={() => navigate("/play/bot")} style={{ width: "100%", padding: 12, fontSize: 16, marginBottom: 12 }}>
+        Play vs Bot
+      </button>
+
       <button onClick={handleCreate} disabled={creating} style={{ width: "100%", padding: 12, fontSize: 16, marginBottom: 24 }}>
         {creating ? "Creating..." : "Create Room"}
       </button>
