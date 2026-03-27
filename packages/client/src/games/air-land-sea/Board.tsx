@@ -63,6 +63,7 @@ export function AirLandSeaBoard({ view, version, playerNames, playerWins, onActi
     if (!selectedCard || !isMyTurn || !canPlayInTheater(theater)) return;
     onAction({ type: "play", cardId: selectedCard, theater, faceUp: playFaceUp });
     setSelectedCard(null);
+    setPlayFaceUp(true);
   };
 
   const handleWithdraw = () => {
