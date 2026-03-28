@@ -471,6 +471,7 @@ function CardChip({ card, isMine, isClickable, isHighlighted, isTopCard, onClick
           <div>
             {isTopCard && <span style={{ fontSize: 9, color: "#888", fontWeight: "bold", marginRight: 4, textTransform: "uppercase" }}>top</span>}
             <strong>{cardDef.name}</strong>
+            <span style={{ color: "#888", marginLeft: 4, fontSize: 10, textTransform: "uppercase" }}>{cardDef.theater}</span>
             <span style={{ color: "#666", marginLeft: 4 }}>str {cardDef.strength}</span>
             {!card.faceUp && <span style={{ color: "#999", marginLeft: 4 }}>(face-down)</span>}
             {!isTopCard && !expanded && cardDef.abilityType !== "none" && <span style={{ color: "#aaa", marginLeft: 4 }}>...</span>}

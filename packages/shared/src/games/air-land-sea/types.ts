@@ -48,6 +48,8 @@ export interface RoundState {
   airDropNextTurn: PlayerId | null;
   /** Pending ability that needs resolution before the turn continues. */
   pendingAbility: PendingAbility | null;
+  /** Ability queued to activate after the current pending ability resolves (e.g. disrupt-self deferred by a chained trigger). */
+  queuedAbility: PendingAbility | null;
   /** Action log for the current round. */
   log: LogEntry[];
 }

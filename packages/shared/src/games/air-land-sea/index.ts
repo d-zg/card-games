@@ -62,6 +62,7 @@ function dealRound(rng: SeededRng, firstPlayer: PlayerId): RoundState {
     lastPlayerToPlay: null,
     airDropNextTurn: null,
     pendingAbility: null,
+    queuedAbility: null,
     log: [],
   };
 }
@@ -601,7 +602,14 @@ function resolveAbility(
         publicText: `Redeployed a card from ${action.theater} to hand`,
       });
       round.pendingAbility = null;
-      // Extra turn: don't advance current player
+      // If there's a queued ability (e.g. disrupt-self), it takes priority
+      if (round.queuedAbility) {
+        round.pendingAbility = round.queuedAbility;
+        round.queuedAbility = null;
+        return { ...state, round };
+      }
+      // Extra turn: give the redeploy owner the next play
+      round.currentPlayer = playerId;
       return { ...state, round };
     }
 
@@ -618,9 +626,11 @@ function resolveAbility(
       if (newFaceUp) {
         triggerFlippedCardAbility(round, action.theater, playerId, action.cardIndex);
         if (round.pendingAbility) {
-          // Triggered ability takes priority; disrupt-self will need to happen after
-          // For simplicity, we let the triggered ability resolve first.
-          // TODO: This means disrupt-self might get skipped. For now, handle the common case.
+          // Triggered ability takes priority; queue disrupt-self to happen after it resolves
+          round.queuedAbility = {
+            type: "disrupt-self",
+            playerId: otherPlayer(playerId),
+          };
           return { ...state, round };
         }
       }
@@ -654,6 +664,13 @@ function resolveAbility(
 
     default:
       return state;
+  }
+
+  // If there's a queued ability, activate it before advancing the turn
+  if (round.queuedAbility) {
+    round.pendingAbility = round.queuedAbility;
+    round.queuedAbility = null;
+    return { ...state, round };
   }
 
   // After ability resolution, check round end or advance turn

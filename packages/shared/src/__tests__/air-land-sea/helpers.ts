@@ -28,6 +28,7 @@ export function makeRound(opts: {
     lastPlayerToPlay: null,
     airDropNextTurn: null,
     pendingAbility: null,
+    queuedAbility: null,
     log: [],
   };
 }

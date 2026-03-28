@@ -12,9 +12,8 @@ import type { BotPlayer } from "@card-games/shared/src/games/air-land-sea/local-
 const MODEL_PATH = "/models";
 
 const MODELS = [
-  { id: "large-2m-gae-batch200", label: "Strong (GAE trained)" },
-  { id: "large-2m-batch200", label: "Large (2M params)" },
-  { id: "small-126k-batch200", label: "Small (126k params)" },
+  { id: "large-2m-batch200", label: "Large (2M)" },
+  { id: "small-126k-batch200", label: "Small (126k)" },
 ] as const;
 
 export function BotGame() {

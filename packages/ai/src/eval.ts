@@ -23,6 +23,7 @@ const NUM_GAMES = 200;
 console.log("Loading models...");
 const smallBot = await Bot.load(CKPT_DIR, "small-126k-batch200");
 const largeBot = await Bot.load(CKPT_DIR, "large-2m-batch200");
+const gae500Bot = await Bot.load(CKPT_DIR, "large-2m-gae-batch500");
 const heuristic = new HeuristicBot();
 
 // Helper: play N games between two bot players
@@ -66,6 +67,7 @@ interface GameResult {
   scores: { p0: number; p1: number };
 }
 
+let _errorLogCount = 0;
 async function playOneGame(p0Bot: BotPlayer, p1Bot: BotPlayer, seed: number): Promise<GameResult> {
   const runner = new GameRunner(alsGame, seed, 2);
   let moves = 0;
@@ -85,17 +87,26 @@ async function playOneGame(p0Bot: BotPlayer, p1Bot: BotPlayer, seed: number): Pr
     const bot = pid === "player-0" ? p0Bot : p1Bot;
     try {
       const action = await bot.selectAction(view);
-      runner.applyAction(pid, action);
-    } catch {
       try {
+        runner.applyAction(pid, action);
+      } catch (applyErr: any) {
+        if (_errorLogCount < 5) {
+          console.error(`\nInvalid action (${pid}): ${applyErr.message} | action: ${JSON.stringify(action)} | phase: ${view.phase} | hand: ${view.myHand.length} | pending: ${view.pendingAbility?.type ?? "none"}`);
+          _errorLogCount++;
+        }
+        // Fallback
         if (view.myHand.length > 0) {
           runner.applyAction(pid, { type: "play", cardId: view.myHand[0], theater: "air", faceUp: false });
         } else {
           runner.applyAction(pid, { type: "withdraw" });
         }
-      } catch {
-        break;
       }
+    } catch (e: any) {
+      if (_errorLogCount < 5) {
+        console.error(`\nBot selectAction error (${pid}): ${e.message}`);
+        _errorLogCount++;
+      }
+      break;
     }
     moves++;
   }
@@ -122,13 +133,10 @@ const randomBot: BotPlayer = {
 console.log(`\nEvaluating ${NUM_GAMES} games per side (${NUM_GAMES * 2} total per matchup)...\n`);
 
 console.log("=== vs Heuristic ===");
+await playMatch("GAE 500", gae500Bot, "Heuristic", heuristic, NUM_GAMES);
+await playMatch("Large (no GAE)", largeBot, "Heuristic", heuristic, NUM_GAMES);
 await playMatch("Small (126k)", smallBot, "Heuristic", heuristic, NUM_GAMES);
-await playMatch("Large (2M)", largeBot, "Heuristic", heuristic, NUM_GAMES);
-
-console.log("\n=== vs Random ===");
-await playMatch("Small (126k)", smallBot, "Random", randomBot, NUM_GAMES);
-await playMatch("Large (2M)", largeBot, "Random", randomBot, NUM_GAMES);
-await playMatch("Heuristic", heuristic, "Random", randomBot, NUM_GAMES);
 
 console.log("\n=== Head to Head ===");
-await playMatch("Large (2M)", largeBot, "Small (126k)", smallBot, NUM_GAMES);
+await playMatch("GAE 500", gae500Bot, "Large (no GAE)", largeBot, NUM_GAMES);
+await playMatch("GAE 500", gae500Bot, "Small (126k)", smallBot, NUM_GAMES);
